@@ -25,6 +25,9 @@ type Bytes struct {
 }
 
 func (p *Pages) Bytes(title, style string, body template.HTML) *Bytes {
+	if _, ok := p.templates[Static]; !ok {
+		p.StaticString(StaticTemplate)
+	}
 	return &Bytes{
 		pages: p,
 		staticData: staticData{
@@ -49,6 +52,9 @@ type File struct {
 }
 
 func (p *Pages) File(title, style, filename string) *File {
+	if _, ok := p.templates[Static]; !ok {
+		p.StaticString(StaticTemplate)
+	}
 	return &File{
 		pages:    p,
 		Filename: filename,
