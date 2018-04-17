@@ -17,6 +17,7 @@ type Pages struct {
 
 	mu        sync.RWMutex
 	templates map[string]dataFile
+	hook      HookFn
 }
 
 func New(baseTemplateFilename string) (*Pages, error) {
@@ -42,6 +43,7 @@ func NewString(baseTemplate string) (*Pages, error) {
 		baseTemplate:    baseTemplate,
 		defaultTemplate: defaultTemplate,
 		templates:       make(map[string]dataFile),
+		hook:            PassthroughHook,
 	}, nil
 }
 
@@ -151,10 +153,22 @@ func (p *Pages) Write(w http.ResponseWriter, r *http.Request, templateName strin
 	if !ok {
 		return errors.WithContext(templateName, ErrUnknownTemplate)
 	}
-	if err := tmpl.Execute(w, data); err != nil {
+	if err := tmpl.Execute(w, p.hook(w, r, data)); err != nil {
 		return errors.WithContext("error writing template: ", err)
 	}
 	return nil
+}
+
+func (p *Pages) Hook(hook HookFn) {
+	p.mu.Lock()
+	p.hook = hook
+	p.mu.Unlock()
+}
+
+type HookFn func(http.ResponseWriter, *http.Request, interface{}) interface{}
+
+var PassthroughHook HookFn = func(_ http.ResponseWriter, _ *http.Request, data interface{}) interface{} {
+	return data
 }
 
 const (
