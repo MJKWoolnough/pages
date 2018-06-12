@@ -1,4 +1,4 @@
-package pages
+package pages // import "vimagination.zapto.org/pages"
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/MJKWoolnough/errors"
+	"vimagination.zapto.org/errors"
 )
 
 type Pages struct {
