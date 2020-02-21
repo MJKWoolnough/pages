@@ -23,7 +23,7 @@ type Pages struct {
 func New(baseTemplateFilename string) (*Pages, error) {
 	templateSrc, err := ioutil.ReadFile(baseTemplateFilename)
 	if err != nil {
-		return nil, errors.WithContext(fmt.Sprintf("error loading base template (%q): ", baseTemplateFilename), err)
+		return nil, fmt.Errorf("error loading base template (%q): %w", baseTemplateFilename, err)
 	}
 	p, err := NewString(string(templateSrc))
 	if err != nil {
@@ -37,7 +37,7 @@ func New(baseTemplateFilename string) (*Pages, error) {
 func NewString(baseTemplate string) (*Pages, error) {
 	defaultTemplate, err := template.New("").Parse(string(baseTemplate))
 	if err != nil {
-		return nil, errors.WithContext("error initialising base template: ", err)
+		return nil, fmt.Errorf("error initialising base template: %w", err)
 	}
 	return &Pages{
 		baseTemplate:    baseTemplate,
@@ -69,15 +69,15 @@ func (p *Pages) RegisterFile(name, filename string) error {
 	}
 	templateSrc, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return errors.WithContext(fmt.Sprintf("error loading template (%q): ", filename), err)
+		return fmt.Errorf("error loading template (%q): %w", filename, err)
 	}
 	dtc, err := p.defaultTemplate.Clone()
 	if err != nil {
-		return errors.WithContext(fmt.Sprintf("error cloning template (%q): ", filename), err)
+		return fmt.Errorf("error cloning template (%q): %w", filename, err)
 	}
 	t, err := dtc.Parse(string(templateSrc))
 	if err != nil {
-		return errors.WithContext(fmt.Sprintf("error initialising template (%q): ", filename), err)
+		return fmt.Errorf("error initialising template (%q): %w", filename, err)
 	}
 	p.templates[name] = dataFile{
 		Template: t,
@@ -95,11 +95,11 @@ func (p *Pages) RegisterString(name, contents string) error {
 	}
 	dtc, err := p.defaultTemplate.Clone()
 	if err != nil {
-		return errors.WithContext(fmt.Sprintf("error cloning template (%q): ", name), err)
+		return fmt.Errorf("error cloning template (%q): %w", name, err)
 	}
 	t, err := dtc.Parse(contents)
 	if err != nil {
-		return errors.WithContext(fmt.Sprintf("error initialising template (%q): ", name), err)
+		return fmt.Errorf("error initialising template (%q): %w", name, err)
 	}
 	p.templates[name] = dataFile{
 		Template: t,
@@ -124,17 +124,17 @@ func (p *Pages) Rebuild() error {
 		}
 	}
 	if err != nil {
-		return errors.WithContext("error reloading templates: ", err)
+		return fmt.Errorf("error reloading templates: %w", err)
 	}
 	for name, data := range p.templates {
 		if data.isFile {
 			if err = np.RegisterFile(name, data.data); err != nil {
-				return errors.WithContext("error reloading templates: ", err)
+				return fmt.Errorf("error reloading templates: %w", err)
 			}
 		} else {
 			if p.isFile {
 				if err = np.RegisterString(name, data.data); err != nil {
-					return errors.WithContext("error reloading templates: ", err)
+					return fmt.Errorf("error reloading templates: %w", err)
 				}
 			} else {
 				np.templates[name] = data
@@ -151,10 +151,10 @@ func (p *Pages) Write(w http.ResponseWriter, r *http.Request, templateName strin
 	tmpl, ok := p.templates[templateName]
 	p.mu.RUnlock()
 	if !ok {
-		return errors.WithContext(templateName, ErrUnknownTemplate)
+		return fmt.Errorf("%s: %w", templateName, ErrUnknownTemplate)
 	}
 	if err := tmpl.Execute(w, p.hook(w, r, data)); err != nil {
-		return errors.WithContext("error writing template: ", err)
+		return fmt.Errorf("error writing template: %w", err)
 	}
 	return nil
 }
@@ -171,7 +171,8 @@ var PassthroughHook HookFn = func(_ http.ResponseWriter, _ *http.Request, data i
 	return data
 }
 
-const (
-	ErrTemplateExists  errors.Error = "template already exists"
-	ErrUnknownTemplate errors.Error = "unknown template"
+// Errors
+var (
+	ErrTemplateExists  = errors.New("template already exists")
+	ErrUnknownTemplate = errors.New("unknown template")
 )
