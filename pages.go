@@ -1,13 +1,12 @@
 package pages // import "vimagination.zapto.org/pages"
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
 	"sync"
-
-	"vimagination.zapto.org/errors"
 )
 
 type Pages struct {
