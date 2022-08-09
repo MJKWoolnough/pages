@@ -2,7 +2,6 @@ package pages
 
 import (
 	"html/template"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"sync"
@@ -81,7 +80,7 @@ func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if modtime = stats.ModTime(); modtime.After(f.LastModified) { // in case another goroutine has changed it already
-			data, err := ioutil.ReadFile(f.Filename)
+			data, err := os.ReadFile(f.Filename)
 			if err != nil {
 				f.mu.Unlock()
 				w.WriteHeader(http.StatusInternalServerError)

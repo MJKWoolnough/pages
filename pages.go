@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"sync"
 )
 
@@ -20,7 +20,7 @@ type Pages struct {
 }
 
 func New(baseTemplateFilename string) (*Pages, error) {
-	templateSrc, err := ioutil.ReadFile(baseTemplateFilename)
+	templateSrc, err := os.ReadFile(baseTemplateFilename)
 	if err != nil {
 		return nil, fmt.Errorf("error loading base template (%q): %w", baseTemplateFilename, err)
 	}
@@ -66,7 +66,7 @@ func (p *Pages) RegisterFile(name, filename string) error {
 	if _, ok := p.templates[name]; ok {
 		return ErrTemplateExists
 	}
-	templateSrc, err := ioutil.ReadFile(filename)
+	templateSrc, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("error loading template (%q): %w", filename, err)
 	}
