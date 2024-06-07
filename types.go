@@ -27,6 +27,7 @@ func (p *Pages) Bytes(title, style string, body template.HTML) *Bytes {
 	if _, ok := p.templates[Static]; !ok {
 		p.StaticString(StaticTemplate)
 	}
+
 	return &Bytes{
 		pages: p,
 		staticData: staticData{
@@ -54,6 +55,7 @@ func (p *Pages) File(title, style, filename string) *File {
 	if _, ok := p.templates[Static]; !ok {
 		p.StaticString(StaticTemplate)
 	}
+
 	return &File{
 		pages:    p,
 		Filename: filename,
@@ -68,22 +70,26 @@ func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stats, err := os.Stat(f.Filename)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+
 		return
 	}
+
 	if modtime := stats.ModTime(); modtime.After(f.LastModified) {
 		f.mu.Lock()
+
 		stats, err = os.Stat(f.Filename)
 		if err != nil {
 			f.mu.Unlock()
 			w.WriteHeader(http.StatusInternalServerError)
+
 			return
 		}
 
 		if modtime = stats.ModTime(); modtime.After(f.LastModified) { // in case another goroutine has changed it already
-			data, err := os.ReadFile(f.Filename)
-			if err != nil {
+			if data, err := os.ReadFile(f.Filename); err != nil {
 				f.mu.Unlock()
 				w.WriteHeader(http.StatusInternalServerError)
+
 				return
 			} else {
 				f.staticData = &staticData{
@@ -94,10 +100,13 @@ func (f *File) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				f.LastModified = modtime
 			}
 		}
+
 		f.mu.Unlock()
 	}
+
 	f.mu.RLock()
 	staticData := f.staticData
 	f.mu.RUnlock()
+
 	f.pages.Write(w, r, Static, staticData)
 }
